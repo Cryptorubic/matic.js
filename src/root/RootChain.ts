@@ -4,6 +4,8 @@ import ContractsBase from '../common/ContractsBase'
 import { MaticClientInitializationOptions } from '../types/Common'
 import Web3Client from '../common/Web3Client'
 import BN from 'bn.js'
+import rootChainAbi from '../constants/RootChain.json'
+import { AbiItem } from 'web3-utils'
 
 const logger = {
   info: require('debug')('maticjs:Web3Client'),
@@ -18,8 +20,8 @@ export default class RootChain extends ContractsBase {
   public rootChain: Contract
 
   constructor(options: MaticClientInitializationOptions, web3Client: Web3Client) {
-    super(web3Client, options.network)
-    this.rootChain = new this.web3Client.parentWeb3.eth.Contract(options.network.abi('RootChain'), options.rootChain)
+    super(web3Client)
+    this.rootChain = new this.web3Client.parentWeb3.eth.Contract(rootChainAbi.abi as AbiItem[], options.rootChain)
   }
 
   getLastChildBlock() {

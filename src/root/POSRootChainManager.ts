@@ -4,6 +4,8 @@ import ExitManager from '../common/ExitManager'
 import Web3Client from '../common/Web3Client'
 import { MaticClientInitializationOptions, SendOptions } from '../types/Common'
 import RootChain from './RootChain'
+import rootChainManagerAbi from '../constants/RootChainManagerProxy.json'
+import { AbiItem } from 'web3-utils'
 
 const ERC20_TRANSFER_EVENT_SIG = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'
 
@@ -12,10 +14,10 @@ export default class POSRootChainManager extends ContractsBase {
   private exitManager: ExitManager
 
   constructor(options: MaticClientInitializationOptions, rootChain: RootChain, web3Client: Web3Client) {
-    super(web3Client, options.network)
+    super(web3Client)
     this.posRootChainManager = new this.web3Client.parentWeb3.eth.Contract(
-      options.network.abi('RootChainManager', 'pos'),
-      options.posRootChainManager || options.network.Main.POSContracts.RootChainManagerProxy
+      rootChainManagerAbi.abi as AbiItem[],
+      '0xA0c68C638235ee32657e8f720a23ceC1bFc77C77' // RootChainManagerProxy
     )
     this.exitManager = new ExitManager(rootChain, options, web3Client)
   }

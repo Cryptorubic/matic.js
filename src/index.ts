@@ -2,16 +2,14 @@ import SDKClient from './common/SDKClient'
 import POSRootChainManager from './root/POSRootChainManager'
 import RootChain from './root/RootChain'
 import { MaticClientInitializationOptions, SendOptions } from './types/Common'
-import { mapPromise } from './common/MapPromise'
 
 export class MaticPOSClient extends SDKClient {
   private rootChain: RootChain
   private posRootChainManager: POSRootChainManager
 
   constructor(options: any = {}) {
-    options.network = SDKClient.initializeNetwork(options.network, options.version)
     if (!options.rootChain) {
-      options.rootChain = options.network.Main.Contracts.RootChainProxy
+      options.rootChain = '0x86E4Dc95c7FBdBf52e33D563BbDB00823894C287' // RootChainProxy
     }
     super(options)
     this.rootChain = new RootChain(options, this.web3Client)
@@ -31,21 +29,8 @@ export class MaticPOSClient extends SDKClient {
 
 export default class Matic extends SDKClient {
   public static MaticPOSClient = MaticPOSClient // workaround for web compatibility
-  public static mapPromise = mapPromise // workaround for web compatibility
 
   constructor(options: MaticClientInitializationOptions = {}) {
-    const network = SDKClient.initializeNetwork(options.network, options.version)
-    // override contract addresses if they were provided during initialization
-    options = Object.assign(
-      {
-        registry: network.Main.Contracts.Registry,
-        rootChain: network.Main.Contracts.RootChainProxy,
-        depositManager: network.Main.Contracts.DepositManagerProxy,
-        withdrawManager: network.Main.Contracts.WithdrawManagerProxy,
-      },
-      options
-    )
-    options.network = network
     super(options)
   }
 }

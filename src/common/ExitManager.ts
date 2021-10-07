@@ -19,9 +19,9 @@ export default class ExitManager extends ContractsBase {
   private networkApiUrl
 
   constructor(rootChain: RootChain, options: MaticClientInitializationOptions, web3Client: Web3Client) {
-    super(web3Client, options.network)
+    super(web3Client)
     this.rootChain = rootChain
-    this.networkApiUrl = options.network.Matic.NetworkAPI
+    this.networkApiUrl = 'https://apis.matic.network/api/v1/matic'
   }
 
   async buildPayloadForExitFastMerkle(start, end, blockNumber) {
