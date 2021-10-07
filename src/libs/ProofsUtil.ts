@@ -1,8 +1,6 @@
-import axios from 'axios'
 import { mapPromise } from '../common/MapPromise'
-const BN = require('bn.js')
+
 const Trie = require('merkle-patricia-tree')
-const EthereumTx = require('ethereumjs-tx')
 const ethUtils = require('ethereumjs-util')
 const MerkleTree = require('./MerkleTree')
 const EthereumBlock = require('ethereumjs-block/from-rpc')
@@ -15,20 +13,6 @@ const logger = {
 
 // TODO: remove proofs util and use plasma-core library
 export default class ProofsUtil {
-  static getBlockHeader(block) {
-    const n = new BN(block.number).toArrayLike(Buffer, 'be', 32)
-    const ts = new BN(block.timestamp).toArrayLike(Buffer, 'be', 32)
-    const txRoot = ethUtils.toBuffer(block.transactionsRoot)
-    const receiptsRoot = ethUtils.toBuffer(block.receiptsRoot)
-    return ethUtils.keccak256(Buffer.concat([n, ts, txRoot, receiptsRoot]))
-  }
-
-  static async buildCheckpointRoot(web3, start, end) {
-    logger.debug('buildCheckpointRoot...')
-    const tree = await ProofsUtil.buildBlockHeaderMerkle(web3, start, end)
-    return ethUtils.bufferToHex(tree.getRoot())
-  }
-
   static async buildBlockProof(web3, start, end, blockNumber) {
     logger.debug('buildBlockProof...', start, end, blockNumber)
     const proof = await ProofsUtil.getFastMerkleProof(web3, blockNumber, start, end)
@@ -39,13 +23,6 @@ export default class ProofsUtil {
         })
       )
     )
-  }
-
-  static async buildBlockProofHermoine(web3, start, end, blockNumber, networkApiUrl) {
-    logger.debug('buildBlockProof...', start, end, blockNumber)
-    const tree = await ProofsUtil.buildBlockHeaderMerkleHermoine(start, end, networkApiUrl)
-    const proof = tree.getProof(ProofsUtil.getBlockHeader(await web3.eth.getBlock(blockNumber)))
-    return ethUtils.bufferToHex(Buffer.concat(proof))
   }
 
   static async queryRootHash(web3: any, startBlock: number, endBlock: number) {
@@ -135,89 +112,6 @@ export default class ProofsUtil {
     }
 
     return reversedProof.reverse()
-  }
-
-  static async buildBlockHeaderMerkleHermoine(start, end, networkApiUrl) {
-    let logDetails = await axios.get(networkApiUrl + '/generate-proof?start=' + start + '&end=' + end)
-    let logs = logDetails.data.merkle_headerblocks
-    const headers = new Array(end - start + 1)
-    for (let i = 0; i < end - start + 1; i++) {
-      headers[i] = ProofsUtil.getBlockHeader(logs[i])
-    }
-    return new MerkleTree(headers)
-  }
-
-  static async buildBlockHeaderMerkle(web3, start, end) {
-    const headers = new Array(end - start + 1)
-    await mapPromise(
-      headers,
-      // eslint-disable-next-line
-      async (_, i) => {
-        logger.debug('fetching block', i + start)
-        headers[i] = ProofsUtil.getBlockHeader(await web3.eth.getBlock(i + start))
-      },
-      { concurrency: 20 }
-    )
-    return new MerkleTree(headers)
-  }
-
-  static async getTxProof(tx, block) {
-    const txTrie = new Trie()
-    const stateSyncTxHash = ethUtils.bufferToHex(ProofsUtil.getStateSyncTxHash(block))
-
-    for (let i = 0; i < block.transactions.length; i++) {
-      const siblingTx = block.transactions[i]
-      if (siblingTx.hash === stateSyncTxHash) {
-        // ignore if tx hash is bor state-sync tx
-        continue
-      }
-      const path = rlp.encode(siblingTx.transactionIndex)
-      const rawSignedSiblingTx = ProofsUtil.getTxBytes(siblingTx)
-      await new Promise((resolve, reject) => {
-        txTrie.put(path, rawSignedSiblingTx, err => {
-          if (err) {
-            reject(err)
-          } else {
-            resolve({})
-          }
-        })
-      })
-    }
-
-    // promise
-    return new Promise((resolve, reject) => {
-      txTrie.findPath(rlp.encode(tx.transactionIndex), (err, rawTxNode, reminder, stack) => {
-        if (err) {
-          return reject(err)
-        }
-
-        if (reminder.length > 0) {
-          return reject(new Error('Node does not contain the key'))
-        }
-
-        const prf = {
-          blockHash: ethUtils.toBuffer(tx.blockHash),
-          parentNodes: stack.map(s => s.raw),
-          root: ProofsUtil.getRawHeader(block).transactionsTrie,
-          path: rlp.encode(tx.transactionIndex),
-          value: rlp.decode(rawTxNode.value),
-        }
-        resolve(prf)
-      })
-    })
-  }
-
-  static getTxBytes(tx) {
-    const txObj = new EthereumTx(ProofsUtil.squanchTx(tx))
-    return txObj.serialize()
-  }
-
-  static squanchTx(tx) {
-    tx.gasPrice = '0x' + parseInt(tx.gasPrice).toString(16)
-    tx.value = '0x' + parseInt(tx.value).toString(16) || '0'
-    tx.gas = '0x' + parseInt(tx.gas).toString(16)
-    tx.data = tx.input
-    return tx
   }
 
   static getRawHeader(_block) {

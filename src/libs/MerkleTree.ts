@@ -44,60 +44,8 @@ export default class MerkleTree {
     this.createHashes(treeLevel)
   }
 
-  getLeaves() {
-    return this.leaves
-  }
-
-  getLayers() {
-    return this.layers
-  }
-
   getRoot() {
     return this.layers[this.layers.length - 1][0]
-  }
-
-  getProof(leaf) {
-    let index = -1
-    for (let i = 0; i < this.leaves.length; i++) {
-      if (SafeBuffer.compare(leaf, this.leaves[i]) === 0) {
-        index = i
-      }
-    }
-
-    const proof = []
-    if (index <= this.getLeaves().length) {
-      let siblingIndex
-      for (let i = 0; i < this.layers.length - 1; i++) {
-        if (index % 2 === 0) {
-          siblingIndex = index + 1
-        } else {
-          siblingIndex = index - 1
-        }
-        index = Math.floor(index / 2)
-        proof.push(this.layers[i][siblingIndex])
-      }
-    }
-    return proof
-  }
-
-  verify(value, index, root, proof) {
-    if (!Array.isArray(proof) || !value || !root) {
-      return false
-    }
-
-    let hash = value
-    for (let i = 0; i < proof.length; i++) {
-      const node = proof[i]
-      if (index % 2 === 0) {
-        hash = sha3(SafeBuffer.concat([hash, node]))
-      } else {
-        hash = sha3(SafeBuffer.concat([node, hash]))
-      }
-
-      index = Math.floor(index / 2)
-    }
-
-    return SafeBuffer.compare(hash, root) === 0
   }
 }
 

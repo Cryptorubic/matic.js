@@ -15,7 +15,6 @@ export default class Web3Client {
   public maticDefaultOptions: SendOptions
   public parentSupportsEip1559: boolean
   public childSupportsEip1559: boolean
-  public events: any
 
   constructor(
     parentProvider,
@@ -43,11 +42,6 @@ export default class Web3Client {
         },
       ],
     })
-  }
-
-  set wallet(_wallet) {
-    this.parentWeb3.eth.accounts.wallet.add(_wallet)
-    this.web3.eth.accounts.wallet.add(_wallet)
   }
 
   async call(method, options?: SendOptions) {
@@ -152,27 +146,7 @@ export default class Web3Client {
     return this.wrapWeb3Promise(txObject.send(_web3Options), callbacks)
   }
 
-  getParentWeb3() {
-    return this.parentWeb3
-  }
-
   getMaticWeb3() {
     return this.web3
-  }
-
-  getWallet() {
-    return this.web3.eth.accounts.wallet
-  }
-
-  setParentDefaultOptions(options: any) {
-    this.parentDefaultOptions = options
-  }
-
-  setMaticDefaultOptions(options: any) {
-    this.maticDefaultOptions = options
-  }
-
-  setParentProvider(provider) {
-    this.parentWeb3 = new Web3(provider)
   }
 }
