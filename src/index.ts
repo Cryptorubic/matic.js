@@ -1,7 +1,8 @@
 import SDKClient from './common/SDKClient'
 import POSRootChainManager from './root/POSRootChainManager'
 import RootChain from './root/RootChain'
-import { SendOptions } from './types/Common'
+import { MaticClientInitializationOptions, SendOptions } from './types/Common'
+import { mapPromise } from './common/MapPromise'
 
 export class MaticPOSClient extends SDKClient {
   private rootChain: RootChain
@@ -25,5 +26,26 @@ export class MaticPOSClient extends SDKClient {
       throw new Error(`from missing`)
     }
     return this.posRootChainManager.exitERC20Hermoine(txHash, options)
+  }
+}
+
+export default class Matic extends SDKClient {
+  public static MaticPOSClient = MaticPOSClient // workaround for web compatibility
+  public static mapPromise = mapPromise // workaround for web compatibility
+
+  constructor(options: MaticClientInitializationOptions = {}) {
+    const network = SDKClient.initializeNetwork(options.network, options.version)
+    // override contract addresses if they were provided during initialization
+    options = Object.assign(
+      {
+        registry: network.Main.Contracts.Registry,
+        rootChain: network.Main.Contracts.RootChainProxy,
+        depositManager: network.Main.Contracts.DepositManagerProxy,
+        withdrawManager: network.Main.Contracts.WithdrawManagerProxy,
+      },
+      options
+    )
+    options.network = network
+    super(options)
   }
 }
