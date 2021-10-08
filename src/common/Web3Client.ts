@@ -69,7 +69,7 @@ export default class Web3Client {
   private async _fillOptions(txObject, web3, _options, supportsEip1559) {
     if (!_options.from) throw new Error('from is not specified')
     const from = _options.from
-    const maxPriorityFeePerGas = !_options.maxPriorityFeePerGas ? 1000000000 : _options.maxPriorityFeePerGas
+    // const maxPriorityFeePerGas = !_options.maxPriorityFeePerGas ? 1000000000 : _options.maxPriorityFeePerGas
     delete txObject.chainId
 
     const [gasLimit, maxFeePerGas, gasPrice, nonce, chainId] = await Promise.all([
@@ -77,7 +77,7 @@ export default class Web3Client {
         ? txObject.estimateGas({ from, value: _options.value })
         : _options.gasLimit || _options.gas,
       !_options.maxFeePerGas ? undefined : _options.maxFeePerGas,
-      !_options.gasPrice ? web3.eth.getGasPrice() : _options.gasPrice,
+      !_options.gasPrice ? undefined : _options.gasPrice,
       !_options.nonce ? web3.eth.getTransactionCount(from, 'pending') : _options.nonce,
       !_options.chainId ? web3.eth.net.getId() : _options.chainId,
     ])
@@ -87,7 +87,7 @@ export default class Web3Client {
         gas: gasLimit,
         gasLimit: gasLimit,
         maxFeePerGas,
-        maxPriorityFeePerGas,
+        // maxPriorityFeePerGas,
         nonce,
         chainId,
         value: _options.value || 0,
