@@ -53,61 +53,36 @@ export default class Web3Client {
       if (!this.parentSupportsEip1559 && (options.maxFeePerGas || options.maxPriorityFeePerGas)) {
         throw new Error(`Root chain doesn't support eip-1559`)
       }
-      return this._fillOptions(
-        txObject,
-        this.parentWeb3,
-        options || this.parentDefaultOptions,
-        this.parentSupportsEip1559
-      )
+      return this._fillOptions(txObject, this.parentWeb3, options || this.parentDefaultOptions)
     }
     if (!this.childSupportsEip1559 && (options.maxFeePerGas || options.maxPriorityFeePerGas)) {
       throw new Error(`Child chain doesn't support eip-1559`)
     }
-    return this._fillOptions(txObject, this.web3, options || this.maticDefaultOptions, this.childSupportsEip1559)
+    return this._fillOptions(txObject, this.web3, options || this.maticDefaultOptions)
   }
 
-  private async _fillOptions(txObject, web3, _options, supportsEip1559) {
+  private async _fillOptions(txObject, web3, _options) {
     if (!_options.from) throw new Error('from is not specified')
     const from = _options.from
-    // const maxPriorityFeePerGas = !_options.maxPriorityFeePerGas ? 1000000000 : _options.maxPriorityFeePerGas
     delete txObject.chainId
 
-    const [gasLimit, maxFeePerGas, gasPrice, nonce, chainId] = await Promise.all([
-      !(_options.gasLimit || _options.gas)
-        ? txObject.estimateGas({ from, value: _options.value })
-        : _options.gasLimit || _options.gas,
-      !_options.maxFeePerGas ? undefined : _options.maxFeePerGas,
+    const [gasLimit, gasPrice, nonce, chainId] = await Promise.all([
+      !(_options.gasLimit || _options.gas) ? undefined : _options.gasLimit || _options.gas,
       !_options.gasPrice ? undefined : _options.gasPrice,
       !_options.nonce ? web3.eth.getTransactionCount(from, 'pending') : _options.nonce,
       !_options.chainId ? web3.eth.net.getId() : _options.chainId,
     ])
-    if (supportsEip1559 && !_options.gasPrice) {
-      return {
-        from,
-        gas: gasLimit,
-        gasLimit: gasLimit,
-        maxFeePerGas,
-        // maxPriorityFeePerGas,
-        nonce,
-        chainId,
-        value: _options.value || 0,
-        to: _options.to || null,
-        data: _options.data,
-        encodeAbi: _options.encodeAbi || false,
-      }
-    } else {
-      return {
-        from,
-        gas: gasLimit,
-        gasLimit: gasLimit,
-        gasPrice,
-        nonce,
-        chainId,
-        value: _options.value || 0,
-        to: _options.to || null,
-        data: _options.data,
-        encodeAbi: _options.encodeAbi || false,
-      }
+    return {
+      from,
+      gas: gasLimit,
+      gasLimit: gasLimit,
+      gasPrice,
+      nonce,
+      chainId,
+      value: _options.value || 0,
+      to: _options.to || null,
+      data: _options.data,
+      encodeAbi: _options.encodeAbi || false,
     }
   }
 
